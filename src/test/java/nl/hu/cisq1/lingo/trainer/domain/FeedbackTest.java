@@ -19,4 +19,34 @@ class FeedbackTest {
         assertTrue(feedback.isWordGuessed());
     }
 
+    @Test
+    @DisplayName("Word is not guessed when all marks are not correct")
+    public void wordIsNotGuessed() {
+        List<Mark> marks = List.of(CORRECT, CORRECT, CORRECT, CORRECT, INVALID);
+        String attempt = "STEEK";
+        Feedback feedback = new Feedback(attempt, marks);
+
+        assertFalse(feedback.isWordGuessed());
+    }
+
+    @Test
+    @DisplayName("Attempt is invalid when any mark is invalid")
+    public void guessIsInvalid() {
+        List<Mark> marks = List.of(INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID);
+        String attempt = "STEEGJE";
+        Feedback feedback = new Feedback(attempt, marks);
+
+        assertFalse(feedback.isAttemptValid());
+    }
+
+    @Test
+    @DisplayName("Attempt is valid when none of the marks are invalid")
+    public void guessIsNotInvalid() {
+        List<Mark> marks = List.of(CORRECT, CORRECT, CORRECT, CORRECT, ABSENT);
+        String attempt = "STOEP";
+        Feedback feedback = new Feedback(attempt, marks);
+
+        assertTrue(feedback.isAttemptValid());
+    }
+
 }

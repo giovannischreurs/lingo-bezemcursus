@@ -21,4 +21,32 @@ public class Feedback {
         return marks.stream().allMatch(mark -> mark == Mark.CORRECT);
     }
 
+    public boolean isAttemptValid() {
+        return marks.stream().noneMatch(mark -> mark == Mark.INVALID);
+    }
+
+    public String giveHint(String previousHint, String wordToGuess) {
+
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Feedback feedback = (Feedback) o;
+        return Objects.equals(attempt, feedback.attempt) && Objects.equals(marks, feedback.marks);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(attempt, marks);
+    }
+
+    @Override
+    public String toString() {
+        return "Feedback{" +
+                "attempt='" + attempt + '\'' +
+                ", marks=" + marks +
+                '}';
+    }
 }
