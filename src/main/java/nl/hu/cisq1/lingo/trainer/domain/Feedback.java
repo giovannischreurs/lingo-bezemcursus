@@ -1,14 +1,13 @@
 package nl.hu.cisq1.lingo.trainer.domain;
 
 import javax.persistence.*;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 @Entity
 @Table(name = "feedback")
-public class Feedback implements Serializable {
+public class Feedback {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "feedback_id")
@@ -21,24 +20,12 @@ public class Feedback implements Serializable {
     @ElementCollection(targetClass = Mark.class)
     private List<Mark> marks;
 
-    @ElementCollection
-    private List<String> hints = new ArrayList<>();
-
     public Feedback(String attempt, List<Mark> marks) {
         this.attempt = attempt;
         this.marks = marks;
     }
 
     public Feedback() {
-
-    }
-
-    public List<String> getHints() {
-        return hints;
-    }
-
-    public List<Mark> getMarks() {
-        return marks;
     }
 
     public boolean isWordGuessed() {
@@ -53,15 +40,25 @@ public class Feedback implements Serializable {
         String[] splitWordToGuess = wordToGuess.split("");
         String[] splitPreviousHint  = previousHint.split("");
 
+        List<String> hint = new ArrayList<>();
+
         for (int i = 0; i < splitWordToGuess.length; i++) {
             if (marks.get(i) == Mark.CORRECT) {
-                hints.add(splitWordToGuess[i]);
-            }
-            else {
-                hints.add(splitPreviousHint[i]);
+                hint.add(splitWordToGuess[i]);
+            } else {
+                hint.add(splitPreviousHint[i]);
             }
         }
-        return String.join("", hints);
+
+        return String.join("", hint);
+    }
+
+    public String getAttempt() {
+        return attempt;
+    }
+
+    public List<Mark> getMarks() {
+        return marks;
     }
 
     @Override

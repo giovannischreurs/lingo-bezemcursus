@@ -1,5 +1,7 @@
 package nl.hu.cisq1.lingo.trainer.domain;
 
+import org.apache.logging.log4j.util.Strings;
+
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -7,34 +9,28 @@ import java.util.List;
 
 @Entity
 public class Round implements Serializable {
+    public static final int MAX_ATTEMPTS = 5;
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "round_id")
     private Long id;
 
     @Column
-    private int roundNumber;
-
-    @Column
     private String wordToGuess;
 
-    @Enumerated(EnumType.ORDINAL)
-    private Status status;
-
     @OneToMany(cascade = CascadeType.ALL)
-    private List<Feedback> feedBackList = new ArrayList<>();
+    private final List<Feedback> feedbackList = new ArrayList<>();
+
+    @Column
+    private String hint;
 
     public Round(String wordToGuess) {
         this.wordToGuess = wordToGuess;
-        this.status = Status.PLAYING;
-
+        this.hint = wordToGuess.charAt(0) + Strings.repeat(".", wordToGuess.length() - 1);
     }
+
     public Round() {
-
-    }
-
-    public Status getStatus() {
-        return status;
     }
 
     public String getWordToGuess() {
@@ -42,30 +38,23 @@ public class Round implements Serializable {
     }
 
     public List<Feedback> getFeedbackList() {
-        return feedBackList;
+        return feedbackList;
     }
 
-    public Feedback getLastFeedback() {
-        if (feedBackList.isEmpty()) {
-            return new Feedback();
-        } else {
-            return feedBackList.get(feedBackList.size() - 1);
-        }
-    }
-
-    public Feedback guess(String attempt) {
+    public void guess(String attempt) {
         List<Mark> marks = new ArrayList<>();
-        Feedback feedback;
 
-        if (attempt.length() == 0 || attempt.length() != wordToGuess.length()) {
+        if (isInvalidAttempt(attempt)) {
             for (int i = 0; i < wordToGuess.length(); i++) {
                 marks.add(Mark.INVALID);
             }
-            return new Feedback(attempt, marks);
+
+            feedbackList.add(new Feedback(attempt, marks));
+            return;
         }
 
         for (int i = 0; i < attempt.length(); i++) {
-            String presentLetters = attempt.charAt(i) + "";
+            String presentLetters = String.valueOf(attempt.charAt(i));
             if (attempt.charAt(i) == wordToGuess.charAt(i)) {
                 marks.add(Mark.CORRECT);
                 continue;
@@ -75,18 +64,39 @@ public class Round implements Serializable {
                 marks.add(Mark.PRESENT);
                 continue;
             }
+
             marks.add(Mark.ABSENT);
         }
-        feedback = new Feedback(attempt, marks);
-        feedBackList.add(feedback);
 
-        if (getLastFeedback().isWordGuessed()) {
-            status = Status.WON;
-        } else {
-            status = Status.LOST;
-        }
+        Feedback feedback = new Feedback(attempt, marks);
+        feedbackList.add(feedback);
 
-        return feedback;
+        hint = feedback.giveHint(hint, wordToGuess);
     }
 
+    public String getHint() {
+        return hint;
+    }
+
+    public boolean isWordGuessed() {
+        if (feedbackList.isEmpty()) {
+            return false;
+        }
+
+        Feedback lastFeedback = feedbackList.get(feedbackList.size() - 1);
+
+        return lastFeedback.isWordGuessed();
+    }
+
+    public int countAttempts() {
+        return feedbackList.size();
+    }
+
+    public boolean wasLost() {
+        return this.countAttempts() >= MAX_ATTEMPTS && !this.isWordGuessed();
+    }
+
+    private boolean isInvalidAttempt(String attempt) {
+        return attempt.length() == 0 || attempt.length() != wordToGuess.length();
+    }
 }

@@ -17,7 +17,7 @@ class FeedbackTest {
     static Stream<Arguments> provideHintExamples() {
         return Stream.of(
                 Arguments.of("PAARD", "PASEN", "P....", List.of(CORRECT, CORRECT, ABSENT, ABSENT, ABSENT), "PA..."),
-                Arguments.of("PAARD", "PAREN", "PA...", List.of(CORRECT, CORRECT, PRESENT, ABSENT, ABSENT), "PA..."),
+                Arguments.of("PAARD", "PEREN", "PA...", List.of(CORRECT, ABSENT, PRESENT, ABSENT, ABSENT), "PA..."),
                 Arguments.of("PAARD", "PAARS", "PA...", List.of(CORRECT, CORRECT, CORRECT, CORRECT, ABSENT), "PAAR."),
                 Arguments.of("PAARD", "PAARD", "PAAR.", List.of(CORRECT, CORRECT, CORRECT, CORRECT, CORRECT), "PAARD")
         );
