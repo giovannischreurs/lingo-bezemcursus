@@ -1,22 +1,44 @@
 package nl.hu.cisq1.lingo.trainer.domain;
 
-import javax.persistence.ElementCollection;
+import javax.persistence.*;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Predicate;
 
-public class Feedback {
+@Entity
+@Table(name = "feedback")
+public class Feedback implements Serializable {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "feedback_id")
+    private Long id;
+
+    @Column
     private String attempt;
 
-    @ElementCollection
+    @Enumerated(EnumType.STRING)
+    @ElementCollection(targetClass = Mark.class)
     private List<Mark> marks;
 
+    @ElementCollection
     private List<String> hints = new ArrayList<>();
 
     public Feedback(String attempt, List<Mark> marks) {
         this.attempt = attempt;
         this.marks = marks;
+    }
+
+    public Feedback() {
+
+    }
+
+    public List<String> getHints() {
+        return hints;
+    }
+
+    public List<Mark> getMarks() {
+        return marks;
     }
 
     public boolean isWordGuessed() {
