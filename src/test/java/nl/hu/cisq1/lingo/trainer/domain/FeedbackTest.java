@@ -2,13 +2,27 @@ package nl.hu.cisq1.lingo.trainer.domain;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static nl.hu.cisq1.lingo.trainer.domain.Mark.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class FeedbackTest {
+
+    static Stream<Arguments> provideHintExamples() {
+        return Stream.of(
+                Arguments.of("PAARD", "PASEN", "P....", List.of(CORRECT, CORRECT, ABSENT, ABSENT, ABSENT), "PA..."),
+                Arguments.of("PAARD", "PAREN", "PA...", List.of(CORRECT, CORRECT, PRESENT, ABSENT, ABSENT), "PA..."),
+                Arguments.of("PAARD", "PAARS", "PA...", List.of(CORRECT, CORRECT, CORRECT, CORRECT, ABSENT), "PAAR."),
+                Arguments.of("PAARD", "PAARD", "PAAR.", List.of(CORRECT, CORRECT, CORRECT, CORRECT, CORRECT), "PAARD")
+        );
+    }
+
     @Test
     @DisplayName("Word is guessed if all letters are correct")
     public void wordIsGuessed() {
@@ -20,7 +34,7 @@ class FeedbackTest {
     }
 
     @Test
-    @DisplayName("Word is not guessed when all marks are not correct")
+    @DisplayName("Word is not guessed when any marks are not correct")
     public void wordIsNotGuessed() {
         List<Mark> marks = List.of(CORRECT, CORRECT, CORRECT, CORRECT, INVALID);
         String attempt = "STEEK";
@@ -49,4 +63,12 @@ class FeedbackTest {
         assertTrue(feedback.isAttemptValid());
     }
 
+    @ParameterizedTest
+    @MethodSource("provideHintExamples")
+    @DisplayName("Test method for hints")
+    void giveHintTest(String wordToGuess, String attempt, String previousHint, List<Mark> marks, String nextHint) {
+        Feedback feedback = new Feedback(attempt, marks);
+
+        assertEquals(nextHint, feedback.giveHint(previousHint, wordToGuess));
+    }
 }

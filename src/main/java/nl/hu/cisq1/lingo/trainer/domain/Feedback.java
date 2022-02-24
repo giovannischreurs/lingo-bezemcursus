@@ -12,6 +12,8 @@ public class Feedback {
     @ElementCollection
     private List<Mark> marks;
 
+    private List<String> hints = new ArrayList<>();
+
     public Feedback(String attempt, List<Mark> marks) {
         this.attempt = attempt;
         this.marks = marks;
@@ -26,7 +28,18 @@ public class Feedback {
     }
 
     public String giveHint(String previousHint, String wordToGuess) {
+        String[] splitWordToGuess = wordToGuess.split("");
+        String[] splitPreviousHint  = previousHint.split("");
 
+        for (int i = 0; i < splitWordToGuess.length; i++) {
+            if (marks.get(i) == Mark.CORRECT) {
+                hints.add(splitWordToGuess[i]);
+            }
+            else {
+                hints.add(splitPreviousHint[i]);
+            }
+        }
+        return String.join("", hints);
     }
 
     @Override
