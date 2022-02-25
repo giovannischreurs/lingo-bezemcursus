@@ -1,7 +1,9 @@
 package nl.hu.cisq1.lingo.trainer.presentation;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.hu.cisq1.lingo.trainer.data.GameRepository;
 import nl.hu.cisq1.lingo.trainer.domain.Game;
+import nl.hu.cisq1.lingo.trainer.presentation.request.GuessRequest;
 import nl.hu.cisq1.lingo.words.data.WordRepository;
 import nl.hu.cisq1.lingo.words.domain.Word;
 import org.junit.jupiter.api.AfterEach;
@@ -12,8 +14,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.util.Optional;
@@ -60,7 +64,7 @@ class TrainerControllerIntegrationTest {
                 .thenReturn(Optional.of(new Word("PAARD")));
 
         RequestBuilder request = MockMvcRequestBuilders
-                .post("trainer/games");
+                .post("/trainer/games");
 
         String expectedHint = "P....";
 
@@ -84,7 +88,7 @@ class TrainerControllerIntegrationTest {
                 .thenReturn(Optional.of(new Word("HOEDEN")));
 
         RequestBuilder request = MockMvcRequestBuilders
-                .post("/games" + id + "/round");
+                .post("/trainer/games/" + id + "/round");
 
         String expectedHint = "H.....";
 
@@ -101,7 +105,7 @@ class TrainerControllerIntegrationTest {
     @DisplayName("cannot start new round if game not found")
     void cannotStartRound() throws Exception {
         RequestBuilder request = MockMvcRequestBuilders
-                .post("/games/1/round");
+                .post("/trainer/games/1/round");
 
         mockMvc.perform(request)
                 .andExpect(status().isNotFound());
@@ -116,7 +120,7 @@ class TrainerControllerIntegrationTest {
                 .thenReturn(Optional.of(new Word("HOEDEN")));
 
         RequestBuilder request = MockMvcRequestBuilders
-                .post("/games/" + id + "/round");
+                .post("/trainer/games/" + id + "/round");
 
         mockMvc.perform(request)
                 .andExpect(status().isBadRequest());
@@ -136,7 +140,7 @@ class TrainerControllerIntegrationTest {
                 .thenReturn(Optional.of(new Word("HOEDEN")));
 
         RequestBuilder request = MockMvcRequestBuilders
-                .post("/games/" + id + "/round");
+                .post("/trainer/games/" + id + "/round");
 
         mockMvc.perform(request)
                 .andExpect(status().isBadRequest());
@@ -150,7 +154,7 @@ class TrainerControllerIntegrationTest {
         this.gameRepository.save(game);
 
         RequestBuilder request = MockMvcRequestBuilders
-                .get("/games/" + id);
+                .get("/trainer/games/" + id);
 
         String expectedHint = "BLOE.";
 
@@ -167,7 +171,7 @@ class TrainerControllerIntegrationTest {
     @DisplayName("cannot get progress if game not found")
     void cannotGetProgress() throws Exception {
         RequestBuilder request = MockMvcRequestBuilders
-                .get("/games/1");
+                .get("/trainer/games/1");
 
         mockMvc.perform(request)
                 .andExpect(status().isNotFound());
@@ -187,7 +191,7 @@ class TrainerControllerIntegrationTest {
         String attempt = "LOSER";
 
         RequestBuilder request = MockMvcRequestBuilders
-                .post("/games/"+ id + "/guess")
+                .post("/trainer/games/"+ id + "/guess")
                 .param("attempt", attempt);
 
         mockMvc.perform(request)
@@ -202,10 +206,13 @@ class TrainerControllerIntegrationTest {
         this.gameRepository.save(game);
 
         String attempt = "LOSER";
+        GuessRequest guess = new GuessRequest();
+        guess.attempt = attempt;
 
         RequestBuilder request = MockMvcRequestBuilders
-                .post("/games/"+ id + "/guess")
-                .param("attempt", attempt);
+                .post("/trainer/games/" + id + "/guess")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(guess));
 
         mockMvc.perform(request)
                 .andExpect(status().isBadRequest());
@@ -216,9 +223,13 @@ class TrainerControllerIntegrationTest {
     void cannotGuessWhenNoGame() throws Exception {
         String attempt = "LOSER";
 
+        GuessRequest guess = new GuessRequest();
+        guess.attempt = attempt;
+
         RequestBuilder request = MockMvcRequestBuilders
-                .post("/games/1/guess")
-                .param("attempt", attempt);
+                .post("/trainer/games/-1/guess")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(guess));
 
         mockMvc.perform(request)
                 .andExpect(status().isNotFound());
@@ -231,9 +242,13 @@ class TrainerControllerIntegrationTest {
         Long id = game.getId();
         String attempt = "BLOEI";
 
+        GuessRequest guess = new GuessRequest();
+        guess.attempt = attempt;
+
         RequestBuilder request = MockMvcRequestBuilders
-                .post("/games/"+ id + "/guess")
-                .param("attempt", attempt);
+                .post("/trainer/games/"+ id + "/guess")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(guess));
 
         String expectedHint = "BLOE.";
 
@@ -248,17 +263,17 @@ class TrainerControllerIntegrationTest {
         this.gameRepository.deleteAll();
 
         RequestBuilder request = MockMvcRequestBuilders
-                .get("/games");
+                .get("/trainer/games/");
 
         mockMvc.perform(request)
-                .andExpect(status().isNotFound());
+                .andExpect(content().string("[]"));
     }
 
     @Test
     @DisplayName("all games are provided")
     void allGamesAreProvided() throws Exception {
         RequestBuilder request = MockMvcRequestBuilders
-                .get("/games");
+                .get("/trainer/games/");
 
         mockMvc.perform(request)
                 .andExpect(status().isOk())

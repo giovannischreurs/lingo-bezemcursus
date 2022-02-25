@@ -2,6 +2,7 @@ package nl.hu.cisq1.lingo.trainer.domain;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Value;
 import nl.hu.cisq1.lingo.trainer.domain.exception.GameStateException;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
@@ -14,7 +15,6 @@ import static nl.hu.cisq1.lingo.trainer.domain.GameStatus.*;
 
 @Entity
 @Table(name = "game")
-@NoArgsConstructor
 public class Game {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -33,6 +33,8 @@ public class Game {
     @Getter
     private int score = 0;
 
+    public Game() {
+    }
 
     public void startNewRound(String wordToGuess) {
         if (gameStatus != WAITING) {

@@ -32,6 +32,8 @@ public class TrainerController {
             return trainerService.startNewRound(id);
         } catch (GameNotFoundException exception) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, exception.getMessage());
+        } catch (GameStateException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage());
         }
     }
 
@@ -46,7 +48,7 @@ public class TrainerController {
         }
     }
 
-    @GetMapping("/games/{id}/game")
+    @GetMapping("/games/{id}")
     public ProgressDTO showGame(@PathVariable long id) {
         try {
             return trainerService.getProgress(id);
@@ -55,13 +57,9 @@ public class TrainerController {
         }
     }
 
-    @GetMapping("/allgames")
+    @GetMapping("/games")
     public List<ProgressDTO> getAllGames() {
-        try {
-            return trainerService.getAllGames();
-        } catch (ChangeSetPersister.NotFoundException exception) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, exception.getMessage());
-        }
+        return trainerService.getAllGames();
     }
 
 }

@@ -5,6 +5,7 @@ import lombok.Getter;
 import nl.hu.cisq1.lingo.trainer.domain.Feedback;
 
 import java.util.List;
+import java.util.Objects;
 
 @EqualsAndHashCode
 public class ProgressDTO {
@@ -64,4 +65,16 @@ public class ProgressDTO {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ProgressDTO that = (ProgressDTO) o;
+        return Objects.equals(id, that.id) && Objects.equals(gameStatus, that.gameStatus) && Objects.equals(score, that.score) && Objects.equals(feedbackHistory, that.feedbackHistory) && Objects.equals(currentHint, that.currentHint);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, gameStatus, score, feedbackHistory, currentHint);
+    }
 }

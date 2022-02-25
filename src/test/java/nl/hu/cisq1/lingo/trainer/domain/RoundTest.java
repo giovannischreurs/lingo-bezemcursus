@@ -95,24 +95,6 @@ class RoundTest {
         );
     }
 
-
-//    @Test
-//    @DisplayName("Check if feedback is the same feedback object")
-//    void checkFeedback() {
-//        Round round = new Round("PAARD");
-//
-//
-//        assertEquals(round.guess("VEREN"), round.getLastFeedback());
-//    }
-
-//    @Test
-//    @DisplayName("Test if feedback is created")
-//    void getFeedbackList() {
-//        Round round = new Round("PAARD");
-//        round.guess("VEREN");
-//
-//        assertEquals(round.getFeedbackList().size(), 1);
-//    }
     @ParameterizedTest
     @MethodSource("provideHintExamples")
     @DisplayName("provides a base hint with the first character")
@@ -192,7 +174,7 @@ class RoundTest {
     void generateFeedback(Round round, String attempt, Feedback feedback) {
         round.guess(attempt);
 
-        assertEquals(feedback,round.getLastFeedback());
+        assertEquals(feedback, round.getLastFeedback());
     }
 
 }

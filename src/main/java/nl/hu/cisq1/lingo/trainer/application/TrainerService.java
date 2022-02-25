@@ -4,8 +4,8 @@ import nl.hu.cisq1.lingo.trainer.data.GameRepository;
 import nl.hu.cisq1.lingo.trainer.domain.Game;
 import nl.hu.cisq1.lingo.trainer.domain.exception.GameNotFoundException;
 import nl.hu.cisq1.lingo.trainer.application.DTO.ProgressDTO;
+import nl.hu.cisq1.lingo.words.application.WordService;
 import nl.hu.cisq1.lingo.words.data.WordRepository;
-import nl.hu.cisq1.lingo.words.domain.Word;
 import nl.hu.cisq1.lingo.words.domain.exception.WordLengthNotSupportedException;
 import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
@@ -18,17 +18,17 @@ import java.util.List;
 @Transactional
 public class TrainerService {
     private final GameRepository gameRepository;
-    private final WordRepository wordRepository;
+    private final WordService wordService;
 
-    public TrainerService(GameRepository gameRepository, WordRepository wordRepository) {
+    public TrainerService(GameRepository gameRepository, WordService wordService) {
         this.gameRepository = gameRepository;
-        this.wordRepository = wordRepository;
+        this.wordService = wordService;
     }
 
     public ProgressDTO startGame() {
         Game game = new Game();
-        Word wordToGuess = wordRepository.findRandomWordByLength(5).orElseThrow(() -> new WordLengthNotSupportedException(5));
-        game.startNewRound(wordToGuess.getValue());
+        String wordToGuess = wordService.provideRandomWord(5);
+        game.startNewRound(wordToGuess);
 
         this.gameRepository.save(game);
 
@@ -44,8 +44,8 @@ public class TrainerService {
         Game game = getGameById(id);
         int wordLength = game.provideNextWordLength();
 
-        Word wordToGuess = wordRepository.findRandomWordByLength(wordLength).orElseThrow(() -> new WordLengthNotSupportedException(wordLength));
-        game.startNewRound(wordToGuess.getValue());
+        String wordToGuess = wordService.provideRandomWord(wordLength);
+        game.startNewRound(wordToGuess);
 
         this.gameRepository.save(game);
 
@@ -60,13 +60,9 @@ public class TrainerService {
         return convertGameToProgressDTO(game);
     }
 
-    public List<ProgressDTO> getAllGames() throws ChangeSetPersister.NotFoundException {
+    public List<ProgressDTO> getAllGames() {
         List<ProgressDTO> gamePresentationDTOS = new ArrayList<>();
         List<Game> games = this.gameRepository.findAll();
-
-        if (games.isEmpty()) {
-            throw new ChangeSetPersister.NotFoundException();
-        }
 
         for (Game game : games) {
             gamePresentationDTOS.add(convertGameToProgressDTO(game));
@@ -76,7 +72,8 @@ public class TrainerService {
     }
 
     private Game getGameById(Long id) {
-        return this.gameRepository.findById(id).orElseThrow(() -> new GameNotFoundException(id));
+        return this.gameRepository.findById(id)
+                .orElseThrow(() -> new GameNotFoundException(id));
     }
 
     private ProgressDTO convertGameToProgressDTO(Game game) {

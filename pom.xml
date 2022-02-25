@@ -120,11 +120,6 @@
                                             <minimum>0.90</minimum>
                                         </limit>
                                         <limit>
-                                            <counter>BRANCH</counter>
-                                            <value>COVEREDRATIO</value>
-                                            <minimum>0.85</minimum>
-                                        </limit>
-                                        <limit>
                                             <counter>CLASS</counter>
                                             <value>MISSEDCOUNT</value>
                                             <maximum>0</maximum>
@@ -147,6 +142,14 @@
                         <version>0.14</version>
                     </dependency>
                 </dependencies>
+
+                <configuration>
+                    <jvmArgs>
+                        <jvmArg>-Dspring.profiles.active=ci</jvmArg>
+                    </jvmArgs>
+
+                    <coverageThreshold>85</coverageThreshold>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.owasp</groupId>
