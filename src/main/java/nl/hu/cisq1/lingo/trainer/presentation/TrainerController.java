@@ -1,9 +1,16 @@
 package nl.hu.cisq1.lingo.trainer.presentation;
 
+import nl.hu.cisq1.lingo.trainer.application.DTO.ProgressDTO;
 import nl.hu.cisq1.lingo.trainer.application.TrainerService;
-import nl.hu.cisq1.lingo.trainer.domain.GameData;
+import nl.hu.cisq1.lingo.trainer.domain.exception.GameNotFoundException;
+import nl.hu.cisq1.lingo.trainer.domain.exception.GameStateException;
 import nl.hu.cisq1.lingo.trainer.presentation.request.GuessRequest;
+import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/trainer")
@@ -15,19 +22,46 @@ public class TrainerController {
     }
 
     @PostMapping("/games")
-    public GameData startGame() {
+    public ProgressDTO startGame() {
         return trainerService.startGame();
     }
 
-//    @PostMapping("/games/{id}/guess")
-//    public GameData guess(@PathVariable long id, @RequestBody GuessRequest request) {
-//        return trainerService.guess(id, request.attempt);
-//    }
+    @PostMapping("/games/{id}/round")
+    public ProgressDTO startRound(@PathVariable long id) {
+        try {
+            return trainerService.startNewRound(id);
+        } catch (GameNotFoundException exception) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, exception.getMessage());
+        }
+    }
 
-//    @PostMapping("/games/{id}/round")
-//    public GameData startRound(@PathVariable long id) {
-//        return trainerService.startNewRound(id);
-//    }
+    @PostMapping("/games/{id}/guess")
+    public ProgressDTO guess(@PathVariable long id, @RequestBody GuessRequest request) {
+        try {
+            return trainerService.guess(id, request.attempt);
+        } catch (GameNotFoundException exception) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, exception.getMessage());
+        } catch (GameStateException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage());
+        }
+    }
 
-    // Foutafhandeling try/catch -> met juiste status en juiste exception (kan ook later)
+    @GetMapping("/games/{id}/game")
+    public ProgressDTO showGame(@PathVariable long id) {
+        try {
+            return trainerService.getProgress(id);
+        } catch (GameNotFoundException exception) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, exception.getMessage());
+        }
+    }
+
+    @GetMapping("/allgames")
+    public List<ProgressDTO> getAllGames() {
+        try {
+            return trainerService.getAllGames();
+        } catch (ChangeSetPersister.NotFoundException exception) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, exception.getMessage());
+        }
+    }
+
 }

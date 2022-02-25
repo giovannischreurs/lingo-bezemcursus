@@ -69,6 +69,6 @@ class FeedbackTest {
     void giveHintTest(String wordToGuess, String attempt, String previousHint, List<Mark> marks, String nextHint) {
         Feedback feedback = new Feedback(attempt, marks);
 
-        assertEquals(nextHint, feedback.giveHint(previousHint, wordToGuess));
+        assertEquals(nextHint, feedback.giveHint(previousHint), wordToGuess);
     }
 }

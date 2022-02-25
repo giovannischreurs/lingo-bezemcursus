@@ -1,70 +1,91 @@
 package nl.hu.cisq1.lingo.trainer.domain;
 
-import nl.hu.cisq1.lingo.trainer.domain.exception.GameActionNotAllowed;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import nl.hu.cisq1.lingo.trainer.domain.exception.GameStateException;
+import org.hibernate.annotations.Cascade;
+import org.hibernate.annotations.CascadeType;
 
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static nl.hu.cisq1.lingo.trainer.domain.GameStatus.*;
+
 @Entity
 @Table(name = "game")
+@NoArgsConstructor
 public class Game {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "game_id")
-    private long id;
+    @Getter
+    private Long id;
 
-    @Column
-    private int score;
+    @Enumerated(EnumType.STRING)
+    @Getter
+    private GameStatus gameStatus = WAITING;
 
-    @Enumerated(EnumType.ORDINAL)
-    private Status status = Status.WAITING;
+    @OneToMany
+    @JoinColumn
+    @Cascade(CascadeType.ALL)
+    private final List<Round> rounds = new ArrayList<>();
 
-    @OneToMany(cascade = CascadeType.ALL)
-    private List<Round> rounds = new ArrayList<>();
+    @Getter
+    private int score = 0;
 
-    public Game() {
-    }
-
-    public void guess(String attempt) {
-        if (this.status != Status.PLAYING) {
-            throw new GameActionNotAllowed("The game is not active");
-        }
-
-        Round round = rounds.get(rounds.size() - 1);
-        round.guess(attempt);
-
-        if (round.isWordGuessed()) {
-            updateScore(round.countAttempts());
-            status = Status.WAITING;
-        } else if (round.wasLost()) {
-            status = Status.FINISHED;
-        }
-    }
 
     public void startNewRound(String wordToGuess) {
-        if (this.status != Status.WAITING) {
-            throw new GameActionNotAllowed("The game is still active or has ended");
+        if (gameStatus != WAITING) {
+            throw new GameStateException(gameStatus);
         }
 
         Round round = new Round(wordToGuess);
         rounds.add(round);
-        status = Status.PLAYING;
+
+        gameStatus = PLAYING;
     }
 
-    private void updateScore(int numberOfAttempts) {
-        score += 5 * (5 - numberOfAttempts) + 5;
+    public void guess(String attempt) {
+        if (gameStatus != PLAYING) {
+            throw new GameStateException(gameStatus);
+        }
+
+        getLatestRound().guess(attempt);
+
+        checkPlayerFinished();
+        checkPlayerVictory();
     }
 
-    public GameData showData() {
-        Round currentRound = rounds.get(rounds.size() - 1);
-
-        return new GameData(
-                id,
-                status,
-                score,
-                currentRound.getFeedbackList(),
-                currentRound.getHint()
-        );
+    public void checkPlayerFinished() {
+        if (getLatestRound().attemptLimitReached() && !getLatestRound().getLastFeedback().isWordGuessed()) {
+            gameStatus = FINISHED;
+        }
     }
+
+    public void checkPlayerVictory() {
+        if (getLatestRound().getLastFeedback().isWordGuessed()) {
+            score += (5 * (5-getLatestRound().getAttempts()) + 5);
+            gameStatus = WAITING;
+        }
+    }
+
+    public Round getLatestRound() {
+        if(rounds.isEmpty()) {
+            throw new GameStateException(gameStatus);
+        }
+        return rounds.get(rounds.size() - 1);
+    }
+
+    public Integer provideNextWordLength() {
+        int maxWordLength = 7;
+        if (rounds.isEmpty() || getLatestRound().getCurrentWordLength() == maxWordLength) {
+            return 5;
+        }
+        return getLatestRound().getCurrentWordLength()+1;
+    }
+
+    public boolean isPlaying() {
+        return gameStatus == PLAYING;
+    }
+
 }

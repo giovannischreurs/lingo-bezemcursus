@@ -1,102 +1,113 @@
 package nl.hu.cisq1.lingo.trainer.domain;
 
-import org.apache.logging.log4j.util.Strings;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import nl.hu.cisq1.lingo.trainer.domain.exception.AttemptLimitReachedException;
+import nl.hu.cisq1.lingo.trainer.domain.exception.NoFeedbackFoundException;
+import org.hibernate.annotations.Cascade;
+import org.hibernate.annotations.CascadeType;
 
 import javax.persistence.*;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Entity
-public class Round implements Serializable {
-    public static final int MAX_ATTEMPTS = 5;
-
+@EqualsAndHashCode
+@NoArgsConstructor
+public class Round {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "round_id")
     private Long id;
 
-    @Column
+    @OneToMany
+    @JoinColumn
+    @Cascade(CascadeType.ALL)
+    @Getter
+    private final List<Feedback> feedbackHistory = new ArrayList<>();
+
+    @Getter
+    private Integer attempts = 0;
+
     private String wordToGuess;
-
-    @OneToMany(cascade = CascadeType.ALL)
-    private final List<Feedback> feedbackList = new ArrayList<>();
-
-    @Column
-    private String hint;
+    private String lastHint;
 
     public Round(String wordToGuess) {
         this.wordToGuess = wordToGuess;
-        this.hint = wordToGuess.charAt(0) + Strings.repeat(".", wordToGuess.length() - 1);
-    }
-
-    public Round() {
-    }
-
-    public String getWordToGuess() {
-        return wordToGuess;
-    }
-
-    public List<Feedback> getFeedbackList() {
-        return feedbackList;
+        this.lastHint = getBaseHint();
     }
 
     public void guess(String attempt) {
+        if(attemptLimitReached()) {
+            throw new AttemptLimitReachedException(attempts);
+        }
+        generateFeedback(attempt);
+        attempts++;
+    }
+
+    private void generateFeedback(String attempt) {
         List<Mark> marks = new ArrayList<>();
 
-        if (isInvalidAttempt(attempt)) {
-            for (int i = 0; i < wordToGuess.length(); i++) {
+        char[] attemptCharArray = attempt.toCharArray();
+        char[] solutionCharArray = wordToGuess.toCharArray();
+
+        if (attemptInvalid(attempt)) {
+            for (int i = 0; i < getCurrentWordLength(); i++) {
                 marks.add(Mark.INVALID);
             }
-
-            feedbackList.add(new Feedback(attempt, marks));
+            feedbackHistory.add(new Feedback(attempt,marks));
             return;
         }
 
-        for (int i = 0; i < attempt.length(); i++) {
-            String presentLetters = String.valueOf(attempt.charAt(i));
-            if (attempt.charAt(i) == wordToGuess.charAt(i)) {
-                marks.add(Mark.CORRECT);
-                continue;
-            }
-
-            if (wordToGuess.contains(presentLetters)) {
-                marks.add(Mark.PRESENT);
-                continue;
-            }
-
+        for (int i = 0; i < getCurrentWordLength(); i++) {
             marks.add(Mark.ABSENT);
+            if (attemptCharArray[i] == solutionCharArray[i]) {
+                marks.set(i, Mark.CORRECT);
+                solutionCharArray[i] = '!';
+            }
         }
 
-        Feedback feedback = new Feedback(attempt, marks);
-        feedbackList.add(feedback);
-
-        hint = feedback.giveHint(hint, wordToGuess);
-    }
-
-    public String getHint() {
-        return hint;
-    }
-
-    public boolean isWordGuessed() {
-        if (feedbackList.isEmpty()) {
-            return false;
+        for (int i = 0; i < getCurrentWordLength(); i++) {
+            for (int j = 0; j < getCurrentWordLength(); j++) {
+                if (attemptCharArray[i] == solutionCharArray[j] && marks.get(i) == Mark.ABSENT) {
+                    marks.set(i, Mark.PRESENT);
+                    solutionCharArray[j] = '!';
+                }
+            }
         }
 
-        Feedback lastFeedback = feedbackList.get(feedbackList.size() - 1);
-
-        return lastFeedback.isWordGuessed();
+        feedbackHistory.add(new Feedback(attempt,marks));
     }
 
-    public int countAttempts() {
-        return feedbackList.size();
+    private boolean attemptInvalid(String attempt) {
+        return attempt.length() != wordToGuess.length();
     }
 
-    public boolean wasLost() {
-        return this.countAttempts() >= MAX_ATTEMPTS && !this.isWordGuessed();
+    private String getBaseHint() {
+        return wordToGuess.charAt(0) +
+                ".".repeat(wordToGuess.length() - 1);
     }
 
-    private boolean isInvalidAttempt(String attempt) {
-        return attempt.length() == 0 || attempt.length() != wordToGuess.length();
+    public String giveHint() {
+        if (!feedbackHistory.isEmpty()) {
+            lastHint = feedbackHistory.get(feedbackHistory.size() - 1).giveHint(lastHint);
+        }
+        return lastHint;
     }
+
+    public Feedback getLastFeedback() {
+        if(feedbackHistory.isEmpty()) {
+            throw new NoFeedbackFoundException();
+        }
+        return feedbackHistory.get(feedbackHistory.size() - 1);
+    }
+
+    public boolean attemptLimitReached() {
+        int attemptLimit = 5;
+        return attempts >= attemptLimit;
+    }
+
+    public Integer getCurrentWordLength() {
+        return wordToGuess.length();
+    }
+
 }
