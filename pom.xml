@@ -148,6 +148,7 @@
                         <jvmArg>-Dspring.profiles.active=ci</jvmArg>
                     </jvmArgs>
 
+                    <mutationThreshold>70</mutationThreshold>
                     <coverageThreshold>85</coverageThreshold>
                 </configuration>
             </plugin>
